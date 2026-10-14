@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة مسجل الكلية - إدارة الخطط الدراسية والسمسترات</title>
+    <style>
+        :root {
+            --primary: #007bff;
+            --success: #28a745;
+            --danger: #dc3545;
+            --warning: #ffc107;
+            --bg-light: #f4f6f9;
+            --text-dark: #333;
+            --border: #ced4da;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body { background: var(--bg-light); color: var(--text-dark); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+        .mobile-header { display: none; background: #343a40; color: white; padding: 12px 20px; align-items: center; justify-content: space-between; z-index: 1000; width: 100%; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .mobile-header h3 { font-size: 1rem; margin: 0; }
+        .menu-toggle-btn { background: none; border: none; color: white; font-size: 1.8rem; cursor: pointer; outline: none; padding: 0 5px; }
+
+        .app-container { display: flex; flex: 1; overflow: hidden; position: relative; width: 100%; height: 100%; }
+
+        .sidebar { 
+            width: 280px; 
+            background: white; 
+            border-left: 1px solid var(--border); 
+            display: flex; 
+            flex-direction: column; 
+            height: 100%; 
+            box-shadow: -2px 0 10px rgba(0,0,0,0.05); 
+            z-index: 950; 
+            transition: transform 0.3s ease-in-out;
+            flex-shrink: 0;
+        }
+        .sidebar-header { background: #212529; color: white; padding: 20px; text-align: center; }
+        .sidebar-header h3 { font-size: 1.05rem; margin-bottom: 5px; }
+
+        .menu { list-style: none; padding: 10px 0; overflow-y: auto; flex: 1; }
+        .menu li { border-bottom: 1px solid #f1f1f1; }
+        .menu li a { display: flex; align-items: center; padding: 14px 20px; color: #495057; text-decoration: none; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
+        .menu li a:hover, .menu li a.active { background: #e7f1ff; color: var(--primary); border-right: 4px solid var(--primary); }
+
+        .main-content { flex: 1; padding: 25px; overflow-y: auto; height: 100%; background: var(--bg-light); }
+        .admin-section { display: none; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); min-height: 80vh; }
+        .admin-section.active { display: block; }
+
+        .section-title { font-size: 1.15rem; font-weight: bold; margin-bottom: 20px; color: var(--primary); border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        
+        .stats-box { background: #e7f1ff; border: 1px solid #b8daff; color: #004085; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-weight: bold; font-size: 0.95rem; text-align: center; }
+
+        .calendar-card { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 20px; max-width: 650px; margin: 0 auto; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .calendar-header h3 { color: var(--primary); font-size: 1.2rem; }
+        .cal-nav-btn { background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; }
+        .day-name { font-weight: bold; background: #f8f9fa; padding: 10px 0; border-radius: 4px; font-size: 0.85rem; color: #495057; }
+        .day-cell { padding: 14px 0; border: 1px solid #eee; border-radius: 4px; font-size: 0.9rem; font-weight: 500; }
+        .day-cell.today { background: #ffc107; color: #000; font-weight: bold; border: 2px solid #e0a800; }
+        .day-cell.empty { border: none; background: transparent; }
+
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.85rem; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 4px; font-size: 0.9rem; outline: none; }
+        textarea { height: 80px; resize: vertical; }
+
+        .checkbox-group { background: #f8f9fa; padding: 12px; border-radius: 4px; border: 1px solid var(--border); max-height: 320px; overflow-y: auto; }
+        .checkbox-item { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.85rem; }
+        .checkbox-item input { width: auto; }
+
+        .btn { width: 100%; padding: 11px; background: var(--success); color: white; border: none; border-radius: 4px; font-size: 0.95rem; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn-warning { background: var(--warning); color: #333; }
+        .btn-danger { background: var(--danger); }
+
+        .students-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85rem; }
+        .students-table th, .students-table td { border: 1px solid var(--border); padding: 10px; text-align: right; }
+        .students-table th { background: #f8f9fa; }
+
+        @media (max-width: 768px) {
+            .mobile-header { display: flex; }
+            .sidebar { 
+                position: fixed; 
+                right: -280px; 
+                top: 50px; 
+                bottom: 0; 
+                width: 280px; 
+                z-index: 1100;
+                box-shadow: -5px 0 15px rgba(0,0,0,0.2); 
+            }
+            .sidebar.open { 
+                right: 0; 
+            }
+            .main-content { 
+                padding: 15px; 
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="mobile-header">
+    <h3>⚙️ لوحة مسجل الكلية</h3>
+    <button class="menu-toggle-btn" id="adminSidebarToggleBtn">☰</button>
+</div>
+
+<div class="app-container">
+    <div class="sidebar" id="adminSidebar">
+        <div class="sidebar-header">
+            <h3>مسجل الكلية</h3>
+            <span style="font-size:0.8rem; opacity:0.8;">إدارة الخطط الدراسية</span>
+        </div>
+        <ul class="menu">
+            <li><a href="#" data-tab="calendarTab" class="admin-nav-link active">📅 التقويم السنوي</a></li>
+            <li><a href="#" data-tab="coursesTab" class="admin-nav-link">📚 تنزيل المقررات والسمسترات</a></li>
+            <li><a href="#" data-tab="schedulesAdminTab" class="admin-nav-link">📅 الجداول الدراسية</a></li>
+            <li><a href="#" data-tab="gradesTab" class="admin-nav-link">📊 رصد الدرجات والنتائج</a></li>
+            <li><a href="#" data-tab="studentsTab" class="admin-nav-link">👥 إدارة الطلاب والتخصصات</a></li>
+            <li><a href="#" data-tab="warningsTab" class="admin-nav-link">⚠️ الإنذارات والفصل</a></li>
+            <li><a href="#" data-tab="announcementsTab" class="admin-nav-link">📢 الإعلانات العامة</a></li>
+            <li><a href="index.html" style="color: var(--danger);">🚪 تسجيل الخروج</a></li>
+        </ul>
+    </div>
+
+    <div class="main-content">
+        
+        <!-- 1. التقويم -->
+        <div id="calendarTab" class="admin-section active">
+            <div class="section-title">📅 التقويم السنوي والأكاديمي للكلية</div>
+            <div class="stats-box" id="statsDisplay">📊 جاري تحميل إحصائيات الطلاب...</div>
+            
+            <div class="calendar-card">
+                <div class="calendar-header">
+                    <button class="cal-nav-btn" id="prevMonthBtn">← السابق</button>
+                    <h3 id="currentMonthYear">--</h3>
+                    <button class="cal-nav-btn" id="nextMonthBtn">التالي →</button>
+                </div>
+                
+                <div class="calendar-grid" id="calendarDaysGrid">
+                    <div class="day-name">الأحد</div>
+                    <div class="day-name">الإثنين</div>
+                    <div class="day-name">الثلاثاء</div>
+                    <div class="day-name">الأربعاء</div>
+                    <div class="day-name">الخميس</div>
+                    <div class="day-name">الجمعة</div>
+                    <div class="day-name">السبت</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. تنزيل السمسترات والمقررات (حتى الفصل الثالث - 6 مواد لكل فصل) -->
+        <div id="coursesTab" class="admin-section">
+            <div class="section-title">📚 تنزيل المقررات والسمستر الجديد للطالب</div>
+            
+            <form id="adminForm">
+                <div class="form-group">
+                    <label>رقم قيد الطالب:</label>
+                    <input type="text" id="studentId" placeholder="مثال: 12345678" required>
+                </div>
+                <div class="form-group">
+                    <label>اختر الفصل الدراسي (السمستر):</label>
+                    <select id="semester">
+                        <option value="الفصل الأول (ربيع 2026)">الفصل الأول (السمستر 1)</option>
+                        <option value="الفصل الثاني (خريف 2026)">الفصل الثاني (السمستر 2)</option>
+                        <option value="الفصل الثالث (ربيع 2027)">الفصل الثالث (السمستر 3)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>اختر المواد الخاصة بهذا السمستر (6 مواد لكل فصل):</label>
+                    <div class="checkbox-group">
+                        <p style="font-weight:bold; color:#007bff; margin-bottom:6px;">مجموعة الفصل الأول (6 مواد):</p>
+                        <div class="checkbox-item"><input type="checkbox" id="c1" value="GS101 - رياضة 1 (3 وحدات)"><label for="c1">GS101 - رياضة 1</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="c2" value="GS111 - طبيعة 1 (3 وحدات)"><label for="c2">GS111 - طبيعة 1</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="c3" value="GE122 - رسم هندسي (2 وحدات)"><label for="c3">GE122 - رسم هندسي</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="c4" value="GH141 - لغة إنجليزية 1 (2 وحدات)"><label for="c4">GH141 - لغة إنجليزية 1</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="c5" value="GS130 - كيمياء عامة 1 (3 وحدات)"><label for="c5">GS130 - كيمياء عامة 1</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="c6" value="GE115 - مبادئ الهندسة الكهربائية (3 وحدات)"><label for="c6">GE115 - مبادئ الهندسة الكهربائية</label></div>
+                        
+                        <p style="font-weight:bold; color:#28a745; margin:12px 0 6px 0;">مجموعة الفصل الثاني (6 مواد):</p>
+                        <div class="checkbox-item"><input type="checkbox" id="c7" value="GS102 - رياضة 2 (3 وحدات)"><label for="c7">GS102 - رياضة 2</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="c8" value="GS112 - طبيعة 2 (3 وحدات)"><label for="c8">GS112 - طبيعة 2</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="c9" value="GH151 - لغة عربية 1 (2 وحدات)"><label for="c9">GH151 - لغة عربية 1</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="c10" value="GS305 - إحصاء واحتمالات (3 وحدات)"><label for="c10">GS305 - إحصاء واحتمالات</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="c11" value="EE201 - دوائر كهربائية 1 (3 وحدات)"><label for="c11">EE201 - دوائر كهربائية 1</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="c12" value="CP105 - حاسب آلي وبرمجة (3 وحدات)"><label for="c12">CP105 - حاسب آلي وبرمجة</label></div>
+
+                        <p style="font-weight:bold; color:#e0a800; margin:12px 0 6px 0;">مجموعة الفصل الثالث (6 مواد):</p>
+                        <div class="checkbox-item"><input type="checkbox" id="c13" value="GS201 - رياضيات متقدمة (3 وحدات)"><label for="c13">GS201 - رياضيات متقدمة</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="c14" value="EE210 - إلكترونيات 1 (3 وحدات)"><label for="c14">EE210 - إلكترونيات 1</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="c15" value="EE220 - قياسات كهربائية (3 وحدات)"><label for="c15">EE220 - قياسات كهربائية</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="c16" value="EE230 - كهرومغناطيسية (3 وحدات)"><label for="c16">EE230 - كهرومغناطيسية</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="c17" value="EE202 - تحليل دوائر 2 (3 وحدات)"><label for="c17">EE202 - تحليل دوائر 2</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="c18" value="GH205 - تقارير فنية هندسية (2 وحدات)"><label for="c18">GH205 - تقارير فنية هندسية</label></div>
+                    </div>
+                </div>
+                <button type="submit" class="btn">اعتماد السمستر الجديد ومقرراته في السحاب</button>
+            </form>
+        </div>
+
+        <!-- 3. الجداول -->
+        <div id="schedulesAdminTab" class="admin-section">
+            <div class="section-title">📅 نشر الجداول الدراسية</div>
+            <div class="form-group">
+                <label>اختر فرع الجدول:</label>
+                <select id="scheduleTypeSelect">
+                    <option value="scheduleMain">الجدول الدراسي الأسبوعي</option>
+                    <option value="scheduleMidterm">جدول الامتحانات النصفية</option>
+                    <option value="scheduleFinal">جدول الامتحانات النهائية</option>
+                    <option value="scheduleDept">جدول القسم</option>
+                    <option value="scheduleLab">جدول العملي</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>تفاصيل الجدول أو الرابط:</label>
+                <textarea id="scheduleContentInput" placeholder="اكتب المواعيد..."></textarea>
+            </div>
+            <button type="button" class="btn" style="background:#007bff;" id="saveScheduleBtn">نشر الجدول</button>
+        </div>
+
+        <!-- 4. رصد الدرجات -->
+        <div id="gradesTab" class="admin-section">
+            <div class="section-title">📊 رصد الدرجات والنتائج لكل مادة</div>
+            <div class="form-group">
+                <label>رقم قيد الطالب:</label>
+                <input type="text" id="gradeStudentId" placeholder="أدخل رقم القيد...">
+            </div>
+            <div class="form-group">
+                <label>اختر المادة المرصودة:</label>
+                <select id="gradeCourseSelect">
+                    <option value="GS101 - رياضة 1">GS101 - رياضة 1</option>
+                    <option value="GS111 - طبيعة 1">GS111 - طبيعة 1</option>
+                    <option value="GE122 - رسم هندسي">GE122 - رسم هندسي</option>
+                    <option value="GH141 - لغة إنجليزية 1">GH141 - لغة إنجليزية 1</option>
+                    <option value="GS130 - كيمياء عامة 1">GS130 - كيمياء عامة 1</option>
+                    <option value="GE115 - مبادئ الهندسة الكهربائية">GE115 - مبادئ الهندسة الكهربائية</option>
+                    <option value="GS102 - رياضة 2">GS102 - رياضة 2</option>
+                    <option value="GS112 - طبيعة 2">GS112 - طبيعة 2</option>
+                    <option value="GH151 - لغة عربية 1">GH151 - لغة عربية 1</option>
+                    <option value="GS305 - إحصاء واحتمالات">GS305 - إحصاء واحتمالات</option>
+                    <option value="EE201 - دوائر كهربائية 1">EE201 - دوائر كهربائية 1</option>
+                    <option value="CP105 - حاسب آلي وبرمجة">CP105 - حاسب آلي وبرمجة</option>
+                    <option value="GS201 - رياضيات متقدمة">GS201 - رياضيات متقدمة</option>
+                    <option value="EE210 - إلكترونيات 1">EE210 - إلكترونيات 1</option>
+                    <option value="EE220 - قياسات كهربائية">EE220 - قياسات كهربائية</option>
+                    <option value="EE230 - كهرومغناطيسية">EE230 - كهرومغناطيسية</option>
+                    <option value="EE202 - تحليل دوائر 2">EE202 - تحليل دوائر 2</option>
+                    <option value="GH205 - تقارير فنية هندسية">GH205 - تقارير فنية هندسية</option>
+                </select>
+            </div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <div class="form-group"><label>الأعمال (40):</label><input type="number" id="workGrade" placeholder="30"></div>
+                <div class="form-group"><label>النهائي (60):</label><input type="number" id="finalGrade" placeholder="50"></div>
+            </div>
+            <button type="button" class="btn" style="background:#28a745;" id="saveGradeBtn">حفظ ورصد الدرجة</button>
+        </div>
+
+        <!-- 5. الطلاب -->
+        <div id="studentsTab" class="admin-section">
+            <div class="section-title">👥 إدارة الطلاب والتخصصات</div>
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; border: 1px solid var(--border); margin-bottom: 20px;">
+                <div class="form-group"><label>رقم القيد:</label><input type="text" id="targetStudentBioId" placeholder="أدخل رقم القيد..."></div>
+                <div class="form-group">
+                    <label>التخصص:</label>
+                    <select id="studentDepartmentSelect">
+                        <option value="القسم العام">القسم العام</option>
+                        <option value="هندسة كهربائية">هندسة كهربائية</option>
+                        <option value="هندسة ميكانيكية">هندسة ميكانيكية</option>
+                    </select>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" class="btn" style="background:#007bff;" id="updateDeptBtn">تحديث التخصص</button>
+                    <button type="button" class="btn btn-warning" id="unlockBioBtn">فك قفل البيانات</button>
+                </div>
+            </div>
+            <table class="students-table">
+                <thead><tr><th>رقم القيد</th><th>التخصص</th><th>حالة القفل</th><th>الإجراء</th></tr></thead>
+                <tbody id="studentsTableBody"><tr><td colspan="4" style="text-align:center;">جاري التحميل...</td></tr></tbody>
+            </table>
+        </div>
+
+        <!-- 6. الإنذارات -->
+        <div id="warningsTab" class="admin-section">
+            <div class="section-title">⚠️ الإنذارات والفصل النهائي</div>
+            <div class="form-group"><label>رقم القيد:</label><input type="text" id="targetStudentWarningId" placeholder="رقم القيد..."></div>
+            <div class="form-group">
+                <label>الحالة الأكاديمية:</label>
+                <select id="warningStatus">
+                    <option value="none">وضع طبيعي</option>
+                    <option value="الإنذار الأكاديمي الأول (بسبب الرسوب في أكثر من مادتين)">الإنذار الأول</option>
+                    <option value="الإنذار الأكاديمي الثاني (تكرار الرسوب في أكثر من مادتين)">الإنذار الثاني</option>
+                    <option value="فصل نهائي من الكلية (الوصول للإنذار الثالث للرسوب)">فصل نهائي</option>
+                </select>
+            </div>
+            <button type="button" class="btn btn-warning" id="updateWarningBtn">تحديث الوضع</button>
+        </div>
+
+        <!-- 7. الإعلانات -->
+        <div id="announcementsTab" class="admin-section">
+            <div class="section-title">📢 الإعلانات العامة</div>
+            <div class="form-group"><label>نص الإعلان:</label><textarea id="announcementText" placeholder="اكتب الإعلان..."></textarea></div>
+            <button type="button" class="btn" style="background:#17a2b8;" id="publishAnnouncementBtn">نشر الإعلان</button>
+        </div>
+
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, doc, setDoc, getDocs, getDoc, collection, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyBJFa0Am86uIOo1zWGRjf1wZnHrI_UUN50",
+        authDomain: "engineering-sms.firebaseapp.com",
+        projectId: "engineering-sms",
+        storageBucket: "engineering-sms.firebasestorage.app",
+        messagingSenderId: "1054730399462",
+        appId: "1:1054730399462:web:4fef9d4524bbaddd51d527",
+        measurementId: "G-8ZBFTXX7PR"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    if (sessionStorage.getItem('active_admin') !== 'true') {
+        alert('غير مسموح بالدخول.');
+        window.location.href = 'index.html';
+    }
+
+    let currentDate = new Date();
+
+    function renderCalendar() {
+        const grid = document.getElementById('calendarDaysGrid');
+        const monthYearText = document.getElementById('currentMonthYear');
+        
+        if (!grid || !monthYearText) return;
+
+        grid.innerHTML = `
+            <div class="day-name">الأحد</div>
+            <div class="day-name">الإثنين</div>
+            <div class="day-name">الثلاثاء</div>
+            <div class="day-name">الأربعاء</div>
+            <div class="day-name">الخميس</div>
+            <div class="day-name">الجمعة</div>
+            <div class="day-name">السبت</div>
+        `;
+
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        const monthNames = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+        monthYearText.innerText = `${monthNames[month]} ${year}`;
+
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const today = new Date();
+
+        for (let i = 0; i < firstDay; i++) {
+            grid.innerHTML += `<div class="day-cell empty"></div>`;
+        }
+
+        for (let day = 1; day <= daysInMonth; day++) {
+            const isToday = day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
+            grid.innerHTML += `<div class="day-cell ${isToday ? 'today' : ''}">${day}</div>`;
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        renderCalendar();
+
+        const prevBtn = document.getElementById('prevMonthBtn');
+        const nextBtn = document.getElementById('nextMonthBtn');
+        if (prevBtn) {
+            prevBtn.addEventListener('click', () => { 
+                currentDate.setMonth(currentDate.getMonth() - 1); 
+                renderCalendar(); 
+            });
+        }
+        if (nextBtn) {
+            nextBtn.addEventListener('click', () => { 
+                currentDate.setMonth(currentDate.getMonth() + 1); 
+                renderCalendar(); 
+            });
+        }
+
+        const toggleBtn = document.getElementById('adminSidebarToggleBtn');
+        const sidebar = document.getElementById('adminSidebar');
+
+        if (toggleBtn && sidebar) {
+            toggleBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                sidebar.classList.toggle('open');
+            });
+        }
+
+        document.addEventListener('click', (e) => {
+            if (window.innerWidth <= 768 && sidebar && sidebar.classList.contains('open')) {
+                if (!sidebar.contains(e.target) && e.target !== toggleBtn) {
+                    sidebar.classList.remove('open');
+                }
+            }
+        });
+
+        document.querySelectorAll('.admin-nav-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetTab = link.getAttribute('data-tab');
+                document.querySelectorAll('.admin-section').forEach(sec => sec.classList.remove('active'));
+                document.querySelectorAll('.admin-nav-link').forEach(l => l.classList.remove('active'));
+                
+                const targetSec = document.getElementById(targetTab);
+                if (targetSec) targetSec.classList.add('active');
+                link.classList.add('active');
+                
+                if (sidebar) sidebar.classList.remove('open');
+            });
+        });
+    });
+
+    async function loadAdminData() {
+        try {
+            const querySnapshot = await getDocs(collection(db, "students"));
+            const stats = document.getElementById('statsDisplay');
+            if(stats) stats.innerHTML = `👥 إجمالي الطلاب المسجلين سحابياً: ${querySnapshot.size} طالب`;
+            
+            let tableHtml = '';
+            querySnapshot.forEach((docSnap) => {
+                const stId = docSnap.id;
+                const data = docSnap.data();
+                tableHtml += `<tr><td><strong>${stId}</strong></td><td>${data.department || "القسم العام"}</td><td>${data.bioLocked ? "🔒 مقفولة" : "🔓 مفتوحة"}</td><td><span style="color:var(--danger); cursor:pointer;" onclick="deleteStudent('${stId}')">حذف</span></td></tr>`;
+            });
+            const tBody = document.getElementById('studentsTableBody');
+            if(tBody) tBody.innerHTML = tableHtml || '<tr><td colspan="4" style="text-align:center;">لا توجد بيانات</td></tr>';
+        } catch (e) { console.error(e); }
+    }
+    loadAdminData();
+
+    window.deleteStudent = async function(stId) {
+        if (confirm(`حذف الطالب (${stId})؟`)) {
+            await deleteDoc(doc(db, "students", stId));
+            loadAdminData();
+        }
+    };
+
+    const adminForm = document.getElementById('adminForm');
+    if(adminForm) {
+        adminForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const stId = document.getElementById('studentId').value.trim();
+            const semester = document.getElementById('semester').value;
+            let selectedCourses = [];
+            
+            for (let i = 1; i <= 18; i++) {
+                const cb = document.getElementById('c' + i);
+                if (cb && cb.checked) selectedCourses.push(cb.value);
+            }
+
+            if (selectedCourses.length === 0) return alert('اختر مادة واحدة على الأقل.');
+
+            try {
+                const studentRef = doc(db, "students", stId);
+                const studentSnap = await getDoc(studentRef);
+                let existingSemesters = studentSnap.exists() ? (studentSnap.data().semesters || []) : [];
+
+                // تحديث الفصل إذا كان موجوداً منعاً للتكرار، أو إضافته إذا كان جديداً
+                let foundIndex = existingSemesters.findIndex(s => s.semesterName === semester);
+                if (foundIndex >= 0) {
+                    existingSemesters[foundIndex].courses = selectedCourses;
+                } else {
+                    existingSemesters.push({
+                        semesterName: semester,
+                        courses: selectedCourses
+                    });
+                }
+
+                await setDoc(studentRef, {
+                    assignedSemester: semester,
+                    courses: selectedCourses,
+                    semesters: existingSemesters,
+                    password: stId
+                }, { merge: true });
+
+                alert(`تم تنزيل السمستر والمقررات للطالب (${stId}) بنجاح!`);
+                document.getElementById('studentId').value = '';
+                for (let i = 1; i <= 18; i++) {
+                    const cb = document.getElementById('c' + i);
+                    if (cb) cb.checked = false;
+                }
+                loadAdminData();
+            } catch (error) { alert("خطأ: " + error.message); }
+        });
+    }
+
+    const saveSchedBtn = document.getElementById('saveScheduleBtn');
+    if(saveSchedBtn) {
+        saveSchedBtn.addEventListener('click', async () => {
+            const type = document.getElementById('scheduleTypeSelect').value;
+            const content = document.getElementById('scheduleContentInput').value.trim();
+            if (!content) return alert('أدخل التفاصيل.');
+            await setDoc(doc(db, "system_schedules", type), { content }, { merge: true });
+            alert('تم نشر الجدول بنجاح!');
+            document.getElementById('scheduleContentInput').value = '';
+        });
+    }
+
+    const saveGradeBtn = document.getElementById('saveGradeBtn');
+    if(saveGradeBtn) {
+        saveGradeBtn.addEventListener('click', async () => {
+            const stId = document.getElementById('gradeStudentId').value.trim();
+            const course = document.getElementById('gradeCourseSelect').value;
+            const work = parseFloat(document.getElementById('workGrade').value) || 0;
+            const finalGrade = parseFloat(document.getElementById('finalGrade').value) || 0;
+            if (!stId) return alert('أدخل رقم القيد.');
+
+            await setDoc(doc(db, "students", stId), {
+                grades: { [course]: { work, final: finalGrade, total: work + finalGrade } }
+            }, { merge: true });
+            alert('تم رصد الدرجة بنجاح!');
+            document.getElementById('workGrade').value = '';
+            document.getElementById('finalGrade').value = '';
+        });
+    }
+
+    const updateDeptBtn = document.getElementById('updateDeptBtn');
+    if(updateDeptBtn) {
+        updateDeptBtn.addEventListener('click', async () => {
+            const targetId = document.getElementById('targetStudentBioId').value.trim();
+            const dept = document.getElementById('studentDepartmentSelect').value;
+            if (!targetId) return;
+            await setDoc(doc(db, "students", targetId), { department: dept }, { merge: true });
+            alert('تم تحديث التخصص بنجاح!');
+            loadAdminData();
+        });
+    }
+
+    const unlockBioBtn = document.getElementById('unlockBioBtn');
+    if(unlockBioBtn) {
+        unlockBioBtn.addEventListener('click', async () => {
+            const targetId = document.getElementById('targetStudentBioId').value.trim();
+            if (!targetId) return;
+            await setDoc(doc(db, "students", targetId), { bioLocked: false }, { merge: true });
+            alert('تم فك قفل البيانات!');
+            loadAdminData();
+        });
+    }
+
+    const updateWarningBtn = document.getElementById('updateWarningBtn');
+    if(updateWarningBtn) {
+        updateWarningBtn.addEventListener('click', async () => {
+            const targetId = document.getElementById('targetStudentWarningId').value.trim();
+            const status = document.getElementById('warningStatus').value;
+            if (!targetId) return;
+            await setDoc(doc(db, "students", targetId), { academicWarning: status }, { merge: true });
+            alert('تم تحديث الوضع الأكاديمي!');
+        });
+    }
+
+    const publishAnnouncementBtn = document.getElementById('publishAnnouncementBtn');
+    if(publishAnnouncementBtn) {
+        publishAnnouncementBtn.addEventListener('click', async () => {
+            const text = document.getElementById('announcementText').value.trim();
+            if (!text) return;
+            await setDoc(doc(db, "system_settings", "announcement"), { content: text }, { merge: true });
+            alert('تم نشر الإعلان!');
+            document.getElementById('announcementText').value = '';
+        });
+    }
+</script>
+
+</body>
+</html>
+

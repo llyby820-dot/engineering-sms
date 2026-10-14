@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بوابة الطالب الأكاديمية</title>
+    <style>
+        :root {
+            --primary: #007bff;
+            --bg-light: #f4f6f9;
+            --text-dark: #333;
+            --border: #dee2e6;
+            --danger: #dc3545;
+            --success: #28a745;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body { background: var(--bg-light); color: var(--text-dark); display: flex; height: 100vh; overflow: hidden; }
+
+        .mobile-header { display: none; background: var(--primary); color: white; padding: 12px 20px; align-items: center; justify-content: space-between; position: fixed; top: 0; right: 0; left: 0; z-index: 1000; }
+        .menu-toggle-btn { background: none; border: none; color: white; font-size: 1.6rem; cursor: pointer; }
+
+        .sidebar { width: 280px; background: white; border-left: 1px solid var(--border); display: flex; flex-direction: column; height: 100%; box-shadow: -2px 0 10px rgba(0,0,0,0.05); z-index: 900; transition: transform 0.3s ease; }
+        .sidebar-header { background: var(--primary); color: white; padding: 20px; text-align: center; }
+        .sidebar-header h3 { font-size: 1.05rem; margin-bottom: 5px; }
+        .sidebar-header span { font-size: 0.8rem; opacity: 0.9; }
+
+        .menu { list-style: none; padding: 10px 0; overflow-y: auto; flex: 1; }
+        .menu li { border-bottom: 1px solid #f1f1f1; }
+        .menu li a, .menu-dropdown-btn { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; color: #495057; text-decoration: none; font-size: 0.9rem; font-weight: 600; background: none; border: none; width: 100%; text-align: right; cursor: pointer; }
+        .menu li a:hover, .menu-dropdown-btn:hover { background: #f8f9fa; color: var(--primary); }
+        .menu-dropdown-content { display: none; background: #fdfdfe; padding-right: 15px; border-top: 1px solid #eee; border-bottom: 1px solid #eee; }
+        .menu-dropdown-content a { padding: 10px 20px; font-size: 0.85rem; color: #666; display: block; text-decoration: none; }
+        .menu-dropdown-content a:hover { color: var(--primary); background: #f1f3f5; }
+
+        .main-content { flex: 1; padding: 25px; overflow-y: auto; height: 100%; background: var(--bg-light); }
+        .content-section { display: none; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); min-height: 85vh; }
+        .content-section.active { display: block; }
+
+        .section-title { font-size: 1.15rem; font-weight: bold; margin-bottom: 20px; color: var(--primary); border-bottom: 2px solid #eee; padding-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+        
+        .profile-card { display: flex; gap: 20px; align-items: center; background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 20px; }
+        .profile-avatar-container { text-align: center; }
+        .profile-avatar { width: 95px; height: 95px; border-radius: 50%; background: #e9ecef; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; color: #6c757d; border: 2px solid var(--border); overflow: hidden; margin-bottom: 8px; }
+        .profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        
+        .profile-info h4 { color: var(--primary); margin-bottom: 8px; font-size: 1.2rem; }
+        .profile-info p { font-size: 0.9rem; color: #555; margin-bottom: 5px; }
+
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.85rem; }
+        input, select { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 4px; font-size: 0.9rem; outline: none; }
+        .btn-primary { padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 4px; font-size: 0.9rem; font-weight: bold; cursor: pointer; }
+        .btn-success { background: var(--success); }
+
+        .alert-box { background: #fff3cd; border: 1px solid #ffeeba; color: #856404; padding: 15px; border-radius: 6px; font-size: 0.9rem; margin-bottom: 15px; text-align: center; }
+        .warning-banner { background: #f8d7da; border-right: 4px solid var(--danger); padding: 15px; border-radius: 6px; margin-bottom: 15px; font-size: 0.9rem; color: #721c24; display: none; }
+        
+        .records-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9rem; }
+        .records-table th, .records-table td { border: 1px solid var(--border); padding: 12px; text-align: center; }
+        .records-table th { background: #f8f9fa; color: #495057; }
+        .action-link { color: var(--primary); cursor: pointer; font-weight: bold; text-decoration: underline; }
+
+        @media (max-width: 768px) {
+            body { flex-direction: column; overflow: auto; height: auto; }
+            .mobile-header { display: flex; }
+            .sidebar { position: fixed; right: -280px; top: 50px; bottom: 0; width: 280px; transition: right 0.3s ease; background: white; }
+            .sidebar.open { right: 0; box-shadow: -5px 0 15px rgba(0,0,0,0.2); }
+            .main-content { margin-top: 50px; height: auto; }
+            .form-grid { grid-template-columns: 1fr; }
+            .profile-card { flex-direction: column; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="mobile-header">
+    <span style="font-weight: bold;">بوابة الطالب الأكاديمية</span>
+    <button class="menu-toggle-btn" id="sidebarToggleBtn">☰</button>
+</div>
+
+<div class="sidebar" id="appSidebar">
+    <div class="sidebar-header">
+        <h3 id="sidebarStudentName">طالب كلية الهندسة</h3>
+        <span id="sidebarStudentId">رقم القيد: --</span>
+    </div>
+    <ul class="menu">
+        <li><a href="#" data-section="profileSection" class="nav-link">👤 الملف الشخصي والبيانات</a></li>
+        <li><a href="#" data-section="homeSection" class="nav-link">🏠 الرئيسية والإعلانات</a></li>
+        
+        <li>
+            <button class="menu-dropdown-btn" id="dropdownBtn1">📖 السجل الدراسي <span>▼</span></button>
+            <div class="menu-dropdown-content" id="studyRecordDropdown" style="display:block;">
+                <a href="#" data-section="semestersSection" class="nav-link"> سجل الفصول والنتائج</a>
+                <a href="#" data-section="reportsSection" class="nav-link"> تقرير المواد والتقديرات والمعدل</a>
+            </div>
+        </li>
+
+        <li>
+            <button class="menu-dropdown-btn" id="dropdownBtn2">📅 الجداول الدراسية <span>▼</span></button>
+            <div class="menu-dropdown-content" id="tablesDropdown">
+                <a href="#" data-section="scheduleMain" class="nav-link"> الجدول الدراسي</a>
+                <a href="#" data-section="scheduleMidterm" class="nav-link"> جدول الامتحانات النصفية</a>
+                <a href="#" data-section="scheduleFinal" class="nav-link"> جدول الامتحانات النهائية</a>
+                <a href="#" data-section="scheduleDept" class="nav-link"> جدول القسم</a>
+                <a href="#" data-section="scheduleLab" class="nav-link"> جدول العملي</a>
+            </div>
+        </li>
+
+        <li><a href="#" data-section="settingsSection" class="nav-link">⚙️ إعدادات الحساب وكلمة المرور</a></li>
+        <li><a href="#" id="logoutBtn" style="color: var(--danger);">🚪 تسجيل الخروج</a></li>
+    </ul>
+</div>
+
+<div class="main-content">
+    
+    <div id="profileSection" class="content-section active">
+        <div class="section-title">👤 الملف الشخصي والبيانات الأكاديمية والشخصية</div>
+        
+        <div class="profile-card">
+            <div class="profile-avatar-container">
+                <div class="profile-avatar" id="avatarPreview">👨‍🎓</div>
+                <input type="file" id="imageUploadInput" accept="image/*" style="display: none;">
+                <button type="button" id="changeImgBtn" style="font-size: 0.75rem; padding: 6px 12px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">اختيار من الاستوديو</button>
+            </div>
+            <div class="profile-info">
+                <h4 id="profileNameDisplay">طالب كلية الهندسة</h4>
+                <p><strong>رقم القيد:</strong> <span id="pId">--</span></p>
+                <p><strong>القسم / التخصص:</strong> <span id="profileDeptDisplay">القسم العام (سنة تحضيرية)</span></p>
+                <p><strong>الحالة الأكاديمية:</strong> منتظم ومسجل</p>
+            </div>
+        </div>
+
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid var(--border);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h4 style="color: #495057; font-size: 1rem;">📋 بيانات قيد الطالب الرسمية</h4>
+                <span id="lockStatusText" style="font-size: 0.8rem; color: #28a745; font-weight: bold;"></span>
+            </div>
+            
+            <div class="form-grid">
+                <div>
+                    <label>الرقم الوطني:</label>
+                    <input type="text" id="natId" placeholder="أدخل الرقم الوطني...">
+                </div>
+                <div>
+                    <label>رقم الهاتف النقال:</label>
+                    <input type="text" id="phoneNum" placeholder="أدخل رقم الهاتف...">
+                </div>
+                <div>
+                    <label>البريد الإلكتروني الجامعي:</label>
+                    <input type="email" id="emailVal" placeholder="student@eng.edu.ly">
+                </div>
+                <div>
+                    <label>القسم / التخصص الحالي:</label>
+                    <input type="text" id="studentDeptInput" value="القسم العام" readonly style="background:#e9ecef;">
+                </div>
+            </div>
+            <button class="btn-primary btn-success" id="saveBioBtn" style="margin-top: 10px;">حفظ البيانات (تعديل لمرة واحدة)</button>
+        </div>
+    </div>
+
+    <div id="homeSection" class="content-section">
+        <div class="section-title">🏠 لوحة الإعلانات والحالة العامة</div>
+        <div class="warning-banner" id="warningBanner">
+            <strong>⚠️ تنبيه الوضع الأكاديمي:</strong>
+            <span id="warningContentText">--</span>
+        </div>
+        <div class="alert-box" id="announcementBox" style="display:none;">
+            <strong>📢 تنبيه عام من الكلية:</strong> <span id="announcementContentText">--</span>
+        </div>
+        <p style="color: #666; line-height: 1.6;">أهلاً بك في البوابة الإلكترونية. تصفح القائمة الجانبية للاطلاع على سجلك الدراسي، الفصول، والجداول بكل فروعها.</p>
+    </div>
+
+    <div id="semestersSection" class="content-section">
+        <div class="section-title">📖 السجل الدراسي وفصول الطالب المرقمة</div>
+        <div id="semestersContainer">
+            <div class="alert-box">⚠️ لم يقم مسجل الكلية بتنزيل أي سمستر أو فصل دراسي لك بعد.</div>
+        </div>
+    </div>
+
+    <div id="reportsSection" class="content-section">
+        <div class="section-title">📊 تقرير تفصيلي للمقررات والتقديرات والمعدل العام التراكمي</div>
+        <div id="detailedReportsContainer">
+            <div class="alert-box">⚠️ جاري جلب تقارير الدرجات...</div>
+        </div>
+    </div>
+
+    <div id="scheduleMain" class="content-section"><div class="section-title">📅 الجدول الدراسي الأسبوعي</div><div id="schMainBox" class="alert-box">📅 جاري التحميل...</div></div>
+    <div id="scheduleMidterm" class="content-section"><div class="section-title">📝 جدول الامتحانات النصفية</div><div id="schMidBox" class="alert-box">📝 جاري التحميل...</div></div>
+    <div id="scheduleFinal" class="content-section"><div class="section-title">📋 جدول الامتحانات النهائية</div><div id="schFinBox" class="alert-box">📋 جاري التحميل...</div></div>
+    <div id="scheduleDept" class="content-section"><div class="section-title">🏛️ جدول القسم الدراسي</div><div id="schDeptBox" class="alert-box">🏛️ جاري التحميل...</div></div>
+    <div id="scheduleLab" class="content-section"><div class="section-title">🔬 جدول المعامل والعملي</div><div id="schLabBox" class="alert-box">🔬 جاري التحميل...</div></div>
+
+    <div id="settingsSection" class="content-section">
+        <div class="section-title">⚙️ إعدادات الحساب وإعادة تعيين كلمة المرور</div>
+        <div class="form-group">
+            <label>كلمة المرور الجديدة:</label>
+            <input type="password" id="newPassword" placeholder="أدخل كلمة المرور الجديدة...">
+        </div>
+        <button class="btn-primary" id="savePasswordBtn">حفظ كلمة المرور وتحديثها</button>
+    </div>
+
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyBJFa0Am86uIOo1zWGRjf1wZnHrI_UUN50",
+        authDomain: "engineering-sms.firebaseapp.com",
+        projectId: "engineering-sms",
+        storageBucket: "engineering-sms.firebasestorage.app",
+        messagingSenderId: "1054730399462",
+        appId: "1:1054730399462:web:4fef9d4524bbaddd51d527",
+        measurementId: "G-8ZBFTXX7PR"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('sidebarToggleBtn').addEventListener('click', () => {
+            document.getElementById('appSidebar').classList.toggle('open');
+        });
+
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetSection = link.getAttribute('data-section');
+                document.querySelectorAll('.content-section').forEach(sec => sec.classList.remove('active'));
+                document.getElementById(targetSection).classList.add('active');
+                document.getElementById('appSidebar').classList.remove('open');
+            });
+        });
+
+        document.getElementById('dropdownBtn1').addEventListener('click', () => {
+            const dropdown = document.getElementById('studyRecordDropdown');
+            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+        });
+
+        document.getElementById('dropdownBtn2').addEventListener('click', () => {
+            const dropdown = document.getElementById('tablesDropdown');
+            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+        });
+
+        document.getElementById('changeImgBtn').addEventListener('click', () => document.getElementById('imageUploadInput').click());
+        document.getElementById('imageUploadInput').addEventListener('change', uploadProfileImageFromGallery);
+    });
+
+    let currentStudentId = sessionStorage.getItem('active_student_id');
+    if (!currentStudentId) {
+        const manualId = prompt("الرجاء إدخال رقم قيد الطالب:");
+        if (manualId) {
+            currentStudentId = manualId.trim();
+            sessionStorage.setItem('active_student_id', currentStudentId);
+        } else {
+            window.location.href = 'index.html';
+        }
+    }
+
+    document.getElementById('sidebarStudentId').innerText = `رقم القيد: ${currentStudentId}`;
+    document.getElementById('pId').innerText = currentStudentId;
+
+    let globalStudentData = null;
+
+    async function fetchStudentData() {
+        try {
+            const docRef = doc(db, "students", String(currentStudentId).trim());
+            const docSnap = await getDoc(docRef);
+
+            if (docSnap.exists()) {
+                globalStudentData = docSnap.data();
+                
+                if (globalStudentData.academicWarning && globalStudentData.academicWarning.includes("فصل نهائي")) {
+                    document.body.innerHTML = `
+                        <div style="max-width:500px; margin: 80px auto; background:white; padding:30px; border-radius:8px; text-align:center; border:2px solid #dc3545; color:#721c24;">
+                            <h2>🚫 قرار فصل نهائي من الكلية</h2>
+                            <p style="margin:15px 0; line-height:1.6;">تم فصلك نهائياً لاستنفاد الإنذارات الأكاديمية.</p>
+                            <button onclick="sessionStorage.removeItem('active_student_id'); window.location.href='index.html';" style="padding:10px 20px; background:#dc3545; color:white; border:none; border-radius:4px; cursor:pointer;">تسجيل الخروج</button>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const studentDept = globalStudentData.department || "القسم العام";
+                document.getElementById('profileDeptDisplay').innerText = studentDept;
+                document.getElementById('studentDeptInput').value = studentDept;
+
+                // استرجاع الصورة من قاعدة البيانات سحابياً بشكل دائم ودون اختفاء
+                if (globalStudentData.profileImage) {
+                    document.getElementById('avatarPreview').innerHTML = `<img src="${globalStudentData.profileImage}" alt="صورة الطالب">`;
+                }
+
+                if (globalStudentData.natId) document.getElementById('natId').value = globalStudentData.natId;
+                if (globalStudentData.phoneNum) document.getElementById('phoneNum').value = globalStudentData.phoneNum;
+                if (globalStudentData.emailVal) document.getElementById('emailVal').value = globalStudentData.emailVal;
+
+                if (globalStudentData.bioLocked === true) {
+                    document.getElementById('natId').readOnly = true;
+                    document.getElementById('phoneNum').readOnly = true;
+                    document.getElementById('emailVal').readOnly = true;
+                    document.getElementById('natId').style.background = '#e9ecef';
+                    document.getElementById('phoneNum').style.background = '#e9ecef';
+                    document.getElementById('emailVal').style.background = '#e9ecef';
+                    document.getElementById('saveBioBtn').style.display = 'none';
+                    document.getElementById('lockStatusText').innerText = "🔒 تم قفل البيانات (تتطلب موافقة الأدمن لتعديلها)";
+                } else {
+                    document.getElementById('lockStatusText').innerText = "⚠️ متاح لك تعديل وحفظ بياناتك لمرة واحدة فقط";
+                }
+
+                const semestersList = globalStudentData.semesters || [];
+                if (semestersList.length > 0) {
+                    let semestersHtml = `
+                        <table class="records-table">
+                            <thead>
+                                <tr>
+                                    <th>ر.م</th>
+                                    <th>اسم الفصل الدراسي (السمستر)</th>
+                                    <th>حالة التسجيل</th>
+                                    <th>النتائج والتفاصيل</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+
+                    semestersList.forEach((sem, idx) => {
+                        semestersHtml += `
+                            <tr>
+                                <td>${idx + 1}</td>
+                                <td><strong>${sem.semesterName}</strong></td>
+                                <td style="color:var(--success); font-weight:bold;">تم التسجيل</td>
+                                <td><span class="action-link" onclick="window.showSemesterResults(${idx})">عرض نتائج الفصل</span></td>
+                            </tr>
+                        `;
+                    });
+
+                    semestersHtml += `</tbody></table><div id="semesterResultsContainer" style="margin-top:20px;"></div>`;
+                    document.getElementById('semestersContainer').innerHTML = semestersHtml;
+                }
+
+                renderDetailedReports(globalStudentData);
+
+                if (globalStudentData.academicWarning && globalStudentData.academicWarning !== "none") {
+                    document.getElementById('warningContentText').innerText = globalStudentData.academicWarning;
+                    document.getElementById('warningBanner').style.display = 'block';
+                }
+            }
+
+            const annSnap = await getDoc(doc(db, "system_settings", "announcement"));
+            if (annSnap.exists() && annSnap.data().content) {
+                document.getElementById('announcementContentText').innerText = annSnap.data().content;
+                document.getElementById('announcementBox').style.display = 'block';
+            }
+
+            ['Main', 'Midterm', 'Final', 'Dept', 'Lab'].forEach(async (typeKey) => {
+                const schSnap = await getDoc(doc(db, "system_schedules", "schedule" + typeKey));
+                const boxId = 'sch' + typeKey + 'Box';
+                if (schSnap.exists() && schSnap.data().content) {
+                    document.getElementById(boxId).innerHTML = `<p style="white-space: pre-line; line-height:1.6;">${schSnap.data().content}</p>`;
+                    document.getElementById(boxId).style.background = '#f8f9fa';
+                    document.getElementById(boxId).style.color = '#333';
+                } else {
+                    document.getElementById(boxId).innerHTML = `⚠️ لم يتم نشر هذا الجدول حتى الآن.`;
+                }
+            });
+
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    function getGradeText(total) {
+        if (total >= 85) return '<span style="color:#007bff; font-weight:bold;">امتياز</span>';
+        if (total >= 75) return '<span style="color:#17a2b8; font-weight:bold;">جيد جداً</span>';
+        if (total >= 65) return '<span style="color:#28a745; font-weight:bold;">جيد</span>';
+        if (total >= 50) return '<span style="color:#ffc107; font-weight:bold;">مقبول</span>';
+        return '<span style="color:var(--danger); font-weight:bold;">راسب (إعادة)</span>';
+    }
+
+    window.showSemesterResults = function(index) {
+        if (!globalStudentData) return;
+        const targetSem = globalStudentData.semesters[index];
+        const container = document.getElementById('semesterResultsContainer');
+        const courses = targetSem.courses || [];
+        const grades = globalStudentData.grades || {};
+
+        let tableHtml = `
+            <h4 style="margin-bottom:10px; color:#495057; font-size:1rem;">تفاصيل درجات الفصل: ${targetSem.semesterName}</h4>
+            <table class="records-table">
+                <thead>
+                    <tr>
+                        <th>رمز المقرر</th>
+                        <th>اسم المادة</th>
+                        <th>الأعمال (40)</th>
+                        <th>النهائي (60)</th>
+                        <th>المجموع (100)</th>
+                        <th>التقدير</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        let totalScore = 0;
+        let count = 0;
+        let failedCoursesCount = 0;
+        let failedList = [];
+
+        courses.forEach(courseStr => {
+            const courseKey = courseStr.split(' - ')[0] + ' - ' + courseStr.split(' - ')[1].split(' (')[0];
+            const gradeObj = grades[courseKey] || grades[courseStr];
+
+            let work = gradeObj ? gradeObj.work : '-';
+            let final = gradeObj ? gradeObj.final : '-';
+            let total = gradeObj ? gradeObj.total : '-';
+            let gradeText = '<span style="color:#6c757d;">قيد الرصد</span>';
+
+            if (gradeObj && typeof gradeObj.total === 'number') {
+                count++;
+                totalScore += gradeObj.total;
+                gradeText = getGradeText(gradeObj.total);
+                if (gradeObj.total < 50) {
+                    failedCoursesCount++;
+                    failedList.push(courseStr.split(' - ')[1] || courseStr);
+                }
+            }
+
+            tableHtml += `
+                <tr>
+                    <td>${courseStr.split(' - ')[0]}</td>
+                    <td>${courseStr.split(' - ')[1] || courseStr}</td>
+                    <td>${work}</td>
+                    <td>${final}</td>
+                    <td><strong>${total}</strong></td>
+                    <td>${gradeText}</td>
+                </tr>
+            `;
+        });
+
+        tableHtml += `</tbody></table>`;
+        let average = count > 0 ? (totalScore / (count * 100)) * 100 : 0;
+        
+        tableHtml += `
+            <div style="margin-top:15px; background:#e7f1ff; padding:15px; border-radius:6px; border:1px solid #b8daff; color:#004085;">
+                <p><strong>المعدل الفصلي:</strong> ${count > 0 ? average.toFixed(2) + '%' : 'قيد اكتمال رصد الدرجات'}</p>
+                <p><strong>عدد المواد الراسبة:</strong> ${failedCoursesCount}</p>
+                ${failedCoursesCount > 0 ? `<p style="color:var(--danger); margin-top:5px;"><strong>المواد المطلوبة لإعادة التنزيل:</strong> ${failedList.join('، ')}</p>` : ''}
+            </div>
+        `;
+
+        container.innerHTML = tableHtml;
+    };
+
+    function renderDetailedReports(studentData) {
+        const container = document.getElementById('detailedReportsContainer');
+        const semestersList = studentData.semesters || [];
+        const grades = studentData.grades || {};
+
+        if (semestersList.length === 0) {
+            container.innerHTML = `<div class="alert-box">⚠️ لا توجد مقررات دراسية مسجلة في التقارير بعد.</div>`;
+            return;
+        }
+
+        let html = `
+            <table class="records-table">
+                <thead>
+                    <tr>
+                        <th>ر.م</th>
+                        <th>رمز المقرر</th>
+                        <th>اسم المقرر</th>
+                        <th>الفصل الدراسي</th>
+                        <th>المحصلة النهائية</th>
+                        <th>التقدير</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        let totalScoreSum = 0;
+        let totalCoursesCount = 0;
+        let globalIndex = 1;
+
+        semestersList.forEach(sem => {
+            const semCourses = sem.courses || [];
+            semCourses.forEach(courseStr => {
+                const courseKey = courseStr.split(' - ')[0] + ' - ' + courseStr.split(' - ')[1].split(' (')[0];
+                const gradeObj = grades[courseKey] || grades[courseStr];
+                let total = gradeObj && typeof gradeObj.total === 'number' ? gradeObj.total : null;
+                let totalStr = total !== null ? total + ' درجة' : 'قيد الرصد';
+                let gradeText = total !== null ? getGradeText(total) : 'قيد الرصد';
+
+                if (total !== null) {
+                    totalScoreSum += total;
+                    totalCoursesCount++;
+                }
+
+                html += `
+                    <tr>
+                        <td>${globalIndex++}</td>
+                        <td>${courseStr.split(' - ')[0]}</td>
+                        <td>${courseStr.split(' - ')[1] || courseStr}</td>
+                        <td>${sem.semesterName}</td>
+                        <td><strong>${totalStr}</strong></td>
+                        <td>${gradeText}</td>
+                    </tr>
+                `;
+            });
+        });
+
+        html += `</tbody></table>`;
+
+        let generalAverage = totalCoursesCount > 0 ? (totalScoreSum / (totalCoursesCount * 100)) * 100 : 0;
+
+        html += `
+            <div style="margin-top:20px; background:#d4edda; padding:15px; border-radius:6px; border:1px solid #c3e6cb; color:#155724; font-weight:bold; font-size:1.05rem; text-align:left;">
+                المعدل العام التراكمي للكلية = ${totalCoursesCount > 0 ? generalAverage.toFixed(2) + '%' : 'قيد اكتمال رصد الدرجات'}
+            </div>
+        `;
+
+        container.innerHTML = html;
+    }
+
+    fetchStudentData();
+
+    // اختيار وتحميل الصورة مباشرة من الاستوديو مع تصغير حجمها تلقائياً للحفظ السحابي
+    function uploadProfileImageFromGallery(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.src = e.target.result;
+            img.onload = async function() {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 250;
+                const MAX_HEIGHT = 250;
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > MAX_WIDTH) {
+                        height *= MAX_WIDTH / width;
+                        width = MAX_WIDTH;
+                    }
+                } else {
+                    if (height > MAX_HEIGHT) {
+                        width *= MAX_HEIGHT / height;
+                        height = MAX_HEIGHT;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+                document.getElementById('avatarPreview').innerHTML = `<img src="${compressedBase64}" alt="صورة الطالب">`;
+
+                try {
+                    await updateDoc(doc(db, "students", String(currentStudentId).trim()), { profileImage: compressedBase64 });
+                    alert('تم حفظ الصورة من الاستوديو سحابياً ولن تختفي بعد اليوم!');
+                } catch (err) {
+                    alert('خطأ أثناء حفظ الصورة سحابياً.');
+                }
+            };
+        };
+        reader.readAsDataURL(file);
+    }
+
+    document.getElementById('saveBioBtn').addEventListener('click', async () => {
+        const natId = document.getElementById('natId').value.trim();
+        const phone = document.getElementById('phoneNum').value.trim();
+        const email = document.getElementById('emailVal').value.trim();
+
+        if (!natId || !phone || !email) {
+            alert('الرجاء تعبئة جميع الحقول.');
+            return;
+        }
+
+        try {
+            await updateDoc(doc(db, "students", String(currentStudentId).trim()), {
+                natId: natId,
+                phoneNum: phone,
+                emailVal: email,
+                bioLocked: true
+            });
+            alert('تم حفظ البيانات بنجاح وتقفيلها ضد التعديل المزدوج!');
+            location.reload();
+        } catch (error) {
+            alert('خطأ أثناء حفظ البيانات.');
+        }
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', (e) => {
+        e.preventDefault();
+        sessionStorage.removeItem('active_student_id');
+        window.location.href = 'index.html';
+    });
+
+    document.getElementById('savePasswordBtn').addEventListener('click', async () => {
+        const newPass = document.getElementById('newPassword').value.trim();
+        if (!newPass) return alert('أدخل كلمة المرور الجديدة.');
+        try {
+            await updateDoc(doc(db, "students", String(currentStudentId).trim()), { password: newPass });
+            alert('تم تحديث كلمة المرور بنجاح!');
+            document.getElementById('newPassword').value = '';
+        } catch (error) {
+            alert('خطأ أثناء التحديث.');
+        }
+    });
+</script>
+
+</body>
+</html>
+
